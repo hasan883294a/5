@@ -1,0 +1,16 @@
+{
+  "invoiceSheetName": "صورت حساب",
+  "aggregateSheetName": "جمع‌آوری داده",
+  "summarySheetName": "خلاصه داده",
+  "categories": {
+    "sale": ["فروش"],
+    "sale_credit": ["فروش اعتباری"],
+    "return_sale": ["برگشت از فروش"],
+    "return_sale_credit": ["برگشت از فروش اعتباری"]
+  },
+  "headers": {
+    "variantCode": ["کد تنوع", "Variant Code", "Code"],
+    "variantTitle": ["عنوان تنوع", "Variant Title", "Title"]
+  },
+  "numberFormat": "#,##0"
+}
