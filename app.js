@@ -1,68 +1,33 @@
-// app.js — خواندن دقیق ستون‌های بدهکار/بستانکار با هدرهای «(﷼)»
-
+// app.js — استخراج ستون‌های 3,4,6,7 از سمت راست از ردیف دوم به بعد
 (function(){
   const el = id => document.getElementById(id);
   const fileInput = el('fileInput');
 
-  // تبدیل ارقام فارسی/عربی به لاتین
   function toLatinDigits(s){
     if (s == null) return s;
-    const map = {
-      '۰': '0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9',
-      '٠': '0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'
-    };
+    const map = {'۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9',
+                 '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'};
     return String(s).replace(/[۰-۹٠-٩]/g, ch => map[ch] ?? ch);
   }
 
-  // نرمال‌سازی کلیدها: حذف نیم‌فاصله و کاراکترهای صفر-عرض
-  function normalizeKey(k){
-    if (k == null) return k;
-    return String(k).replace(/[\u200B\u200C\u200D\u2060\uFEFF]/g, '').trim();
+  function normalizeString(s){
+    if (s == null) return s;
+    return String(s).replace(/[\u200B\u200C\u200D\u2060\uFEFF]/g, '').trim();
   }
 
-  // تبدیل مقدار به عدد (پذیرش جداکننده هزار، ارقام فارسی، ﷼ و ...)
   function toNumber(v){
     if (v == null) return null;
     let s = toLatinDigits(String(v));
-    // حذف نماد ریال و هر حرف غیرعددی بجز -, . , ,
+    // حذف نماد ریال و هر کاراکتر غیرعددی به جز - . ,
     s = s.replace(/[^\d\-\.,]/g, '');
-    // اگر فقط ویرگول هست و نقطه نیست، ویرگول را اعشار فرض کن
-    const hasComma = s.includes(',');
-    const hasDot = s.includes('.');
-    if (hasComma && !hasDot) {
-      s = s.replace(/,/g, '.');
-    } else {
-      // کاما را جداکننده هزار فرض و حذف کن
-      s = s.replace(/,/g, '');
-    }
+    const hasComma = s.includes(','), hasDot = s.includes('.');
+    if (hasComma && !hasDot) s = s.replace(/,/g, '.'); else s = s.replace(/,/g, '');
     const n = Number(s);
     return Number.isFinite(n) ? n : null;
   }
 
-  // پیدا کردن مقدار با نام‌های ممکن
-  function findValue(row, candidates){
-    if (!row) return null;
-    const keys = Object.keys(row);
-    // تطابق دقیق
-    for (const k of keys) {
-      const nk = normalizeKey(k);
-      for (const name of candidates) {
-        if (nk === normalizeKey(name)) return row[k];
-      }
-    }
-    // تطابق جزئی (مثلاً شامل «بدهکار» + «﷼»)
-    for (const k of keys) {
-      const nk = normalizeKey(k);
-      for (const name of candidates) {
-        const nn = normalizeKey(name);
-        if (nk.includes(nn)) return row[k];
-      }
-    }
-    return null;
-  }
-
   if (!fileInput) {
-    alert('عنصر fileInput یافت نشد. مطمئن شو id="fileInput" در index.html وجود دارد.');
+    console.warn('عنصر fileInput پیدا نشد. مطمئن شو id="fileInput" در index.html وجود دارد.');
     return;
   }
 
@@ -74,55 +39,85 @@
       const data = await file.arrayBuffer();
 
       if (typeof XLSX === 'undefined') {
-        alert('کتابخانه XLSX لود نشده است. ابتدا xlsx.full.min.js را لود کن.');
+        alert('کتابخانه XLSX لود نشده. ابتدا xlsx.full.min.js را اضافه کن.');
         return;
       }
 
-      const wb = XLSX.read(data, { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' });
+      // خواندن شیت به صورت آرایه‌ای (header:1)
+      const wb = XLSX.read(data, { type: 'array', cellDates: true });
       const firstSheetName = wb.SheetNames && wb.SheetNames[0];
       if (!firstSheetName) {
-        alert('هیچ شیتی در فایل پیدا نشد.');
+        alert('هیچ شیتی پیدا نشد.');
         return;
       }
 
       const ws = wb.Sheets[firstSheetName];
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: null, raw: false });
-
-      console.log('تعداد ردیف‌ها:', rows.length);
-      if (rows.length === 0) {
-        console.warn('شیت اول خالی است یا داده‌ای قابل تبدیل ندارد.');
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }); // آرایه آرایه‌ها
+      if (!raw || raw.length === 0) {
+        alert('شیت خالی است.');
         return;
       }
 
-      // هدرهای واقعی که sheet_to_json تولید کرده
-      console.log('کلیدهای ردیف اول:', Object.keys(rows[0]).map(k => normalizeKey(k)));
+      // نمایش هدرها (ردیف اول)
+      const headerRow = raw[0].map(h => normalizeString(h));
+      console.log('هدرها از چپ به راست:', headerRow);
 
-      // نام‌های دقیق و چند حالت نزدیک برای ایمنی
-      const creditNames = ['بستانکار (﷼)', 'بستانکار(﷼)', 'بستانکار ‌(﷼)'];
-      const debitNames  = ['بدهکار (﷼)',  'بدهکار(﷼)',  'بدهکار ‌(﷼)'];
+      // تعداد ستون‌ها
+      const colCount = headerRow.length;
 
-      // نمایش 20 ردیف اول برای بررسی
-      let sumDebit = 0, sumCredit = 0;
-      rows.forEach((r, idx) => {
-        const rawDebit  = findValue(r, debitNames);
-        const rawCredit = findValue(r, creditNames);
-        const debit  = toNumber(rawDebit);
-        const credit = toNumber(rawCredit);
+      // موقعیت‌های مورد نظر از سمت راست: 3,4,6,7
+      const positionsFromRight = [3,4,6,7];
 
-        if (idx < 20) {
-          console.log('ردیف ' + (idx+1) + ' → بدهکار خام:', rawDebit, '| بدهکار عددی:', debit);
-          console.log('ردیف ' + (idx+1) + ' → بستانکار خام:', rawCredit, '| بستانکار عددی:', credit);
-        }
-
-        if (debit != null)  sumDebit  += debit;
-        if (credit != null) sumCredit += credit;
+      // تبدیل به اندیس از چپ (0-based)
+      const indices = positionsFromRight.map(pos => {
+        const idx = colCount - pos;
+        return idx >= 0 ? idx : null;
       });
 
-      console.log('جمع بدهکار:', sumDebit, ' | جمع بستانکار:', sumCredit);
-      alert('خواندن ستون‌ها انجام شد. جمع بدهکار/بستانکار در کنسول چاپ شد.');
-      } catch (err) {
-      alert('خطا در پردازش فایل: ' + err.message);
+      console.log('اندیس‌های استخراج شده از چپ (0-based):', indices);
+
+      // پردازش ردیف‌ها از ردیف دوم به بعد (یعنی raw[1] به بعد)
+      const results = [];
+      for (let r = 1; r < raw.length; r++) {
+        const row = raw[r];
+        // اگر ردیف کوتاه است، آن را با null پر کن
+        const fullRow = Array.from({length: colCount}, (_, i) => row[i] ?? null);
+        const out = {};
+        indices.forEach((idx, i) => {
+          const pos = positionsFromRight[i];
+          if (idx === null) {
+            out[pos_${pos}] = { header: null, raw: null, value: null };
+          } else {
+            const rawVal = fullRow[idx];
+            out[pos_${pos}] = {
+              header: headerRow[idx],
+              raw: rawVal,
+              value: toNumber(rawVal)
+            };
+          }
+        });
+        results.push(out);
+      }
+
+      // چاپ نمونه 20 ردیف اول استخراج شده
+      console.log('نمونه استخراج ستون‌های 3,4,6,7 از سمت راست (20 ردیف اول):', results.slice(0,20));
+
+      // جمع‌زدن مقادیر هر ستون (در صورت نیاز)
+      const sums = {};
+      positionsFromRight.forEach(pos => sums[pos_${pos}] = 0);
+      results.forEach(r => {
+        positionsFromRight.forEach(pos => {
+          const v = r[pos_${pos}].value;
+          if (v != null) sums[pos_${pos}] += v;
+        });
+      });
+      console.log('جمع مقادیر هر ستون استخراج شده:', sums);
+
+      alert('استخراج انجام شد. خروجی نمونه و جمع‌ها در کنسول چاپ شدند.');
+      // اگر خواستی می‌تونم همین results را به فرمت دلخواه آماده کنم یا فایل خروجی بسازم
+    } catch (err) {
       console.error(err);
+      alert('خطا در پردازش فایل: ' + err.message);
     }
   });
 })();
