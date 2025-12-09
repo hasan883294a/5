@@ -1,3 +1,4 @@
+// نسخه اصلاح‌شده — پردازش اکسل با ستون‌های بدهکار (ریال) و بستانکار (ریال)
 
 const el = (id) => document.getElementById(id);
 const fileInput = el('fileInput');
@@ -49,8 +50,9 @@ fileInput.addEventListener('change', async (e) => {
       for (const r of rows) {
         const variantCode = pickValue(r, headerMap.variantCode);
         const variantTitle = pickValue(r, headerMap.variantTitle);
-        const debit = toNumber(r['F']);
-        const credit = toNumber(r['G']);
+        // استفاده از نام دقیق ستون‌ها
+        const debit = toNumber(r['بدهکار (ریال)']);
+        const credit = toNumber(r['بستانکار (ریال)']);
         aggRows.push({
           'کد تنوع': variantCode ?? null,
           'عنوان تنوع': variantTitle ?? null,
@@ -68,7 +70,7 @@ fileInput.addEventListener('change', async (e) => {
     // 3) ساخت «خلاصه داده»
     const summaryRows = buildSummary(aggRows, sheetCategories);
     const summaryWs = XLSX.utils.json_to_sheet(summaryRows);
-    applyThousandFormat(summaryWs, ['F', 'G', 'H', 'I']); // جمع بدهکار/بستانکار/درآمد/درآمد به ازای هر فروش
+    applyThousandFormat(summaryWs, ['F', 'G', 'H', 'I']); 
     XLSX.utils.book_append_sheet(outWb, summaryWs, summaryName);
 
     // 4) خروجی
@@ -133,6 +135,7 @@ function applyThousandFormat(ws, cols){
     }
   }
 }
+// ——— خلاصه‌سازی ———
 
 function buildSummary(aggRows, categories){
   const catNames = {
