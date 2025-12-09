@@ -1,33 +1,20 @@
-// app.js — استخراج ستون‌های 3,4,6,7 از سمت راست از ردیف دوم به بعد
+// app.js — پردازش اکسل و تبدیل ستون‌های 6 و 7 از سمت راست به عدد
 (function(){
-  const el = id => document.getElementById(id);
-  const fileInput = el('fileInput');
+  const fileInput = document.getElementById('fileInput');
 
-  function toLatinDigits(s){
-    if (s == null) return s;
-    const map = {'۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9',
-                 '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'};
-    return String(s).replace(/[۰-۹٠-٩]/g, ch => map[ch] ?? ch);
-  }
-
-  function normalizeString(s){
-    if (s == null) return s;
-    return String(s).replace(/[\u200B\u200C\u200D\u2060\uFEFF]/g, '').trim();
-  }
-
-  function toNumber(v){
-    if (v == null) return null;
-    let s = toLatinDigits(String(v));
-    // حذف نماد ریال و هر کاراکتر غیرعددی به جز - . ,
-    s = s.replace(/[^\d\-\.,]/g, '');
-    const hasComma = s.includes(','), hasDot = s.includes('.');
-    if (hasComma && !hasDot) s = s.replace(/,/g, '.'); else s = s.replace(/,/g, '');
-    const n = Number(s);
-    return Number.isFinite(n) ? n : null;
+  // تبدیل رشته‌های عددی فارسی/عربی با جداکننده هزارگان به عدد جاوااسکریپت
+  function convertPersianNumberStringToNumber(str) {
+    if (!str || typeof str !== 'string') return str;
+    const cleaned = str
+      .replace(/٬|,/g, '') // حذف جداکننده هزارگان فارسی و انگلیسی
+      .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)) // فارسی
+      .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)); // عربی
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? str : num;
   }
 
   if (!fileInput) {
-    console.warn('عنصر fileInput پیدا نشد. مطمئن شو id="fileInput" در index.html وجود دارد.');
+    console.warn('عنصر fileInput پیدا نشد. مطمئن شو در index.html وجود دارد.');
     return;
   }
 
@@ -37,84 +24,56 @@
 
     try {
       const data = await file.arrayBuffer();
-
       if (typeof XLSX === 'undefined') {
-        alert('کتابخانه XLSX لود نشده. ابتدا xlsx.full.min.js را اضافه کن.');
+        alert('کتابخانه XLSX لود نشده است. ابتدا xlsx.full.min.js را اضافه کن.');
         return;
       }
 
-      // خواندن شیت به صورت آرایه‌ای (header:1)
-      const wb = XLSX.read(data, { type: 'array', cellDates: true });
-      const firstSheetName = wb.SheetNames && wb.SheetNames[0];
-      if (!firstSheetName) {
-        alert('هیچ شیتی پیدا نشد.');
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+      if (!raw || raw.length < 2) {
+        alert('شیت خالی یا بدون داده است.');
         return;
       }
 
-      const ws = wb.Sheets[firstSheetName];
-      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }); // آرایه آرایه‌ها
-      if (!raw || raw.length === 0) {
-        alert('شیت خالی است.');
-        return;
-      }
+      const headers = raw[0].map(h => h == null ? null : String(h).trim());
+      const colCount = headers.length;
+      console.log('هدرها از چپ به راست:', headers);
 
-      // نمایش هدرها (ردیف اول)
-      const headerRow = raw[0].map(h => normalizeString(h));
-      console.log('هدرها از چپ به راست:', headerRow);
+      // محاسبه اندیس ستون‌های 6 و 7 از سمت راست
+      const idx6 = colCount - 6;
+      const idx7 = colCount - 7;
 
-      // تعداد ستون‌ها
-      const colCount = headerRow.length;
-
-      // موقعیت‌های مورد نظر از سمت راست: 3,4,6,7
-      const positionsFromRight = [3,4,6,7];
-
-      // تبدیل به اندیس از چپ (0-based)
-      const indices = positionsFromRight.map(pos => {
-        const idx = colCount - pos;
-        return idx >= 0 ? idx : null;
-      });
-
-      console.log('اندیس‌های استخراج شده از چپ (0-based):', indices);
-
-      // پردازش ردیف‌ها از ردیف دوم به بعد (یعنی raw[1] به بعد)
+      // پردازش ردیف‌ها از ردیف دوم به بعد
       const results = [];
       for (let r = 1; r < raw.length; r++) {
         const row = raw[r];
-        // اگر ردیف کوتاه است، آن را با null پر کن
-        const fullRow = Array.from({length: colCount}, (_, i) => row[i] ?? null);
-        const out = {};
-        indices.forEach((idx, i) => {
-          const pos = positionsFromRight[i];
-          if (idx === null) {
-            out[pos_${pos}] = { header: null, raw: null, value: null };
-          } else {
-            const rawVal = fullRow[idx];
-            out[pos_${pos}] = {
-              header: headerRow[idx],
-              raw: rawVal,
-              value: toNumber(rawVal)
-            };
-          }
+        if (row.length < colCount) {
+          for (let k = row.length; k < colCount; k++) row[k] = null;
+        }
+        const val6 = convertPersianNumberStringToNumber(row[idx6]);
+        const val7 = convertPersianNumberStringToNumber(row[idx7]);
+        results.push({
+          rowIndex: r+1,
+          col6: { header: headers[idx6], raw: row[idx6], value: val6 },
+          col7: { header: headers[idx7], raw: row[idx7], value: val7 }
         });
-        results.push(out);
       }
 
-      // چاپ نمونه 20 ردیف اول استخراج شده
-      console.log('نمونه استخراج ستون‌های 3,4,6,7 از سمت راست (20 ردیف اول):', results.slice(0,20));
+      // چاپ نمونه 20 ردیف اول
+      console.log('نمونه ستون‌های 6 و 7 (20 ردیف اول):', results.slice(0,20));
 
-      // جمع‌زدن مقادیر هر ستون (در صورت نیاز)
-      const sums = {};
-      positionsFromRight.forEach(pos => sums[pos_${pos}] = 0);
+      // جمع مقادیر
+      let sum6 = 0, sum7 = 0;
       results.forEach(r => {
-        positionsFromRight.forEach(pos => {
-          const v = r[pos_${pos}].value;
-          if (v != null) sums[pos_${pos}] += v;
-        });
+        if (typeof r.col6.value === 'number') sum6 += r.col6.value;
+        if (typeof r.col7.value === 'number') sum7 += r.col7.value;
       });
-      console.log('جمع مقادیر هر ستون استخراج شده:', sums);
+      console.log('جمع ستون 6:', sum6, 'جمع ستون 7:', sum7);
 
-      alert('استخراج انجام شد. خروجی نمونه و جمع‌ها در کنسول چاپ شدند.');
-      // اگر خواستی می‌تونم همین results را به فرمت دلخواه آماده کنم یا فایل خروجی بسازم
+      alert('تبدیل ستون‌های 6 و 7 به عدد انجام شد. خروجی در کنسول است.');
     } catch (err) {
       console.error(err);
       alert('خطا در پردازش فایل: ' + err.message);
