@@ -1,39 +1,30 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>تحلیل صورتحساب اکسل</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <title>تست اکسل</title>
+  <style>
+    body {
+      font-family: Tahoma, sans-serif;
+      direction: rtl;
+      text-align: center;
+      margin-top: 50px;
+    }
+    h1 {
+      color: #333;
+    }
+    input[type="file"] {
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
-  <main class="container">
-    <h1>تحلیل صورتحساب اکسل</h1>
+  <h1>آپلود فایل اکسل برای تست</h1>
+  <input type="file" id="fileInput" />
 
-    <!-- بخش آپلود فایل -->
-    <section class="card">
-      <h2>آپلود فایل</h2>
-      <label for="fileInput" class="btn">انتخاب فایل اکسل</label>
-      <input id="fileInput" type="file" accept=".xlsx,.xls" hidden>
-      <p class="hint">شیت «صورت حساب» بدون تغییر کپی می‌شود؛ سایر شیت‌ها تجمیع و خلاصه‌سازی می‌شوند.</p>
-    </section>
-
-    <!-- بخش خلاصه تحلیل -->
-    <section id="summary" class="card hidden">
-      <h2>خلاصه تحلیل</h2>
-      <div id="summaryContent"></div>
-    </section>
-
-    <!-- بخش دانلود خروجی -->
-    <section id="download" class="card hidden">
-      <h2>دانلود خروجی</h2>
-      <button id="downloadBtn" class="btn">دانلود فایل تحلیل‌شده</button>
-    </section>
-  </main>
-
-  <!-- کتابخانه اکسل (نسخه Vendor شده) -->
+  <!-- ابتدا کتابخانه SheetJS -->
   <script src="vendor/xlsx.full.min.js"></script>
-  <!-- منطق پردازش -->
+  <!-- سپس کد تستی -->
   <script src="app.js"></script>
 </body>
 </html>
