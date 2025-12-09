@@ -13,7 +13,7 @@ fileInput.addEventListener('change', async (e) => {
     const ws = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(ws, { defval: null, raw: false });
 
-    console.log('تعداد ردیف‌ها:', rows.length);
+    console.log(تعداد ردیف‌ها: ${rows.length});
 
     // چاپ کلیدهای هر ردیف
     rows.forEach((r, idx) => {
